@@ -14,7 +14,7 @@ def card_to_int(card_string):
         return int(card_string)
 
 
-def draw_overlay(frame, recommendation, player_hand, dealer_upcard, hand_is_over, stand):
+def draw_overlay(frame, recommendation, player_hand, dealer_upcard, hand_is_over, stand, win):
     h, w = frame.shape[:2]
 
     # Semi-transparent dark panel in top-left
@@ -23,13 +23,19 @@ def draw_overlay(frame, recommendation, player_hand, dealer_upcard, hand_is_over
     cv2.rectangle(overlay, (10, 10), (10 + panel_w, 10 + panel_h), (0, 0, 0), -1)
     cv2.addWeighted(overlay, 0.55, frame, 0.45, 0, frame)
 
-    if(stand):
+    if win:
+        cv2.putText(frame, "YOU WIN!", (20, 60),
+                    cv2.FONT_HERSHEY_DUPLEX, 1.4, (100, 100, 255), 2)
+        cv2.putText(frame, "Press R for next hand", (20, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 1)
+
+    elif stand:
         cv2.putText(frame, "STAND!", (20, 60),
                     cv2.FONT_HERSHEY_DUPLEX, 1.4, (100, 100, 255), 2)
         cv2.putText(frame, "Press R for next hand", (20, 100),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 1)
 
-    if hand_is_over:
+    elif hand_is_over:
         cv2.putText(frame, "HAND OVER, LOST!", (20, 60),
                     cv2.FONT_HERSHEY_DUPLEX, 1.4, (100, 100, 255), 2)
         cv2.putText(frame, "Press R for next hand", (20, 100),
@@ -63,6 +69,7 @@ print("Starting live vision... Press 'q' to quit, 'r' to reset hand.")
 previous_card_count = 0
 hand_is_over = False
 stand = False
+win = False
 current_recommendation = None
 current_player_hand = []
 current_dealer_upcard = None
@@ -97,7 +104,14 @@ with mss.mss() as sct:
         dealer_hand = [card_to_int(c["card"]) for c in dealer_cards]
 
         if (sum(my_hand) > 21):
-            hand_is_over = True
+            if 11 in my_hand:
+                my_hand[my_hand.index(11)] = 1
+            else:
+                hand_is_over = True
+
+        if (sum(my_hand) == 21):
+            win = True
+
 
         if not hand_is_over and len(dealer_hand) >= 1 and len(my_hand) >= 2:
             if len(my_hand) > previous_card_count:
@@ -111,11 +125,13 @@ with mss.mss() as sct:
                 previous_card_count = len(my_hand)
 
                 if best_move == "STAND":
-                    stand = TRUE
+                    stand = True
+                else:
+                    stand = False
 
         annotated_frame = results[0].plot(conf=False)
         draw_overlay(annotated_frame, current_recommendation,
-                     current_player_hand, current_dealer_upcard, hand_is_over, stand)
+                     current_player_hand, current_dealer_upcard, hand_is_over, stand, win)
 
         cv2.imshow("Stake Blackjack Vision", annotated_frame)
 
