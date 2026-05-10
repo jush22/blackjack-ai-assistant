@@ -67,19 +67,22 @@ def calculate_hit_chances(player_cards, dealer_upcard):
 
 def get_best_move(player_cards, dealer_upcard):
     stand_win_rate = 0
-    current_sum = sum(player_cards)
-    temp_users_cards = player_cards
+    temp_cards = player_cards[:]
+    current_sum = sum(temp_cards)
+    while current_sum > 21 and 11 in temp_cards:
+        temp_cards[temp_cards.index(11)] = 1
+        current_sum -= 10
     hit_win_rate = calculate_hit_chances(player_cards, dealer_upcard)
     if current_sum <= 17:
         stand_win_rate = outcomes[dealer_upcard]["Bust"]
     else:
-        for i in range(17, current_sum):
+        for i in range(17, min(current_sum, 22)):
             stand_win_rate += outcomes[dealer_upcard][i]
         stand_win_rate += outcomes[dealer_upcard]["Bust"]
     if hit_win_rate > stand_win_rate:
-        return hit_win_rate, "hit"
+        return hit_win_rate, "HIT"
     else:
-        return stand_win_rate, "stand"
+        return stand_win_rate, "STAND"
 
 
 
